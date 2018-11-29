@@ -21,9 +21,60 @@
   - l_docker_upgrade is defined
   - l_docker_upgrade | bool
 
+- name: Check if cri-o is running as a system container
+  stat:
+    path: "/etc/systemd/system/cri-o.service"
+    get_checksum: false
+    get_attributes: false
+    get_mime: false
+  register: crio_result
+  when: not openshift_is_atomic | bool
+
+# Remove cri-o system container
+- when:
+  - crio_result.stat is defined
+  - crio_result.stat.exists
+  - not openshift_is_atomic | bool
+  block:
+  - name: Uninstall cri-o system container
+    command: atomic uninstall cri-o
+
+  - name: List cri-o atomic image
+    command: atomic images list -f repo=cri-o --json
+    register: crio_images_list
+
+  - name: Delete cri-o system container image
+    command: atomic -y images delete -f {{ crio_image_id }}
+    vars:
+      crio_image_id: "{{ (crio_images_list.stdout | from_json)[0].id }}"
+
+- name: Ensure cri-o is updated
+  package:
+    name: "{{ crio_pkgs | join (',') }}"
+    state: latest
+  when:
+  - openshift_use_crio | bool
+  register: crio_update
+  vars:
+    crio_pkgs:
+    - "cri-o"
+    - "cri-tools"
+
+- name: Remove CRI-O default configuration files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "/etc/cni/net.d/200-loopback.conf"
+  - "/etc/cni/net.d/100-crio-bridge.conf"
+  when: crio_update is changed
+
 - name: install pre-pulled rpms.
   import_tasks: upgrade/rpm_upgrade_install.yml
   when: not openshift_is_containerized | bool
+
+# TODO(michaelgugino): Remove in 3.12
+- import_tasks: selinux_container_cgroup.yml
 
 - include_tasks: "{{ node_config_hook }}"
   when: node_config_hook is defined
@@ -43,8 +94,16 @@
     name: "{{ openshift.common.hostname | lower }}"
   register: node_output
   delegate_to: "{{ groups.oo_first_master.0 }}"
-  until: node_output.results.returncode == 0 and node_output.results.results[0].status.conditions | selectattr('type', 'match', '^Ready$') | map(attribute='status') | join | bool == True
-  # Give the node two minutes to come back online.
+  until:
+  - node_output.results is defined
+  - node_output.results.returncode is defined
+  - node_output.results.returncode == 0
+  - node_output.results.results is defined
+  - node_output.results.results | length > 0
+  - node_output.results.results[0].status is defined
+  - node_output.results.results[0].status.conditions is defined
+  - node_output.results.results[0].status.conditions | selectattr('type', 'match', '^Ready$') | map(attribute='status') | join | bool == True
+  # Give the node three minutes to come back online.
   retries: 24
   delay: 5
 

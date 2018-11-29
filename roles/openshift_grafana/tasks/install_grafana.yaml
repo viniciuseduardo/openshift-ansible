@@ -27,6 +27,7 @@
   command: >
     {{ openshift_client_binary }} annotate --overwrite -n {{ grafana_namespace }}
     serviceaccount {{ grafana_serviceaccount_name }} {{ item }}
+    --config={{ openshift.common.config_base }}/master/admin.kubeconfig
   with_items:
     "{{ grafana_serviceaccount_annotations }}"
 
@@ -139,11 +140,11 @@
   retries: "{{ (grafana_timeout | int / 10) | int }}"
 
 - name: Get the prometheus SA token
-  shell: "{{ openshift_client_binary }} sa get-token {{ grafana_prometheus_serviceaccount }} -n {{ grafana_prometheus_namespace }}"
+  shell: "{{ openshift_client_binary }} --config={{ openshift.common.config_base }}/master/admin.kubeconfig sa get-token {{ grafana_prometheus_serviceaccount }} -n {{ grafana_prometheus_namespace }}"
   register: prometheus_sa_token
 
 - name: Get the grafana SA token
-  shell: "{{ openshift_client_binary }} sa get-token {{ grafana_serviceaccount_name }} -n {{ grafana_namespace }}"
+  shell: "{{ openshift_client_binary }} --config={{ openshift.common.config_base }}/master/admin.kubeconfig sa get-token {{ grafana_serviceaccount_name }} -n {{ grafana_namespace }}"
   register: grafana_sa_token
 
 - name: Get prometheus route
@@ -173,11 +174,39 @@
     method: POST
     body: '{{ payload_data }}'
     body_format: json
+    status_code:
+    - 200
+    - 409
     headers:
       Content-Type: "Content-Type: application/json"
   register: add_ds
 
-- name: Regex set data soure name for openshift dashboard
+- block:
+  - name: Retrieve current grafana datasource
+    uri:
+      url: "{{ grafana_route }}/api/datasources/name/{{ grafana_datasource_name }}"
+      user: "{{ grafana_sa_token.stdout }}"
+      validate_certs: false
+      method: GET
+      status_code:
+      - 200
+    register: grafana_ds
+  - name: Update grafana datasource
+    uri:
+      url: "{{ grafana_route }}/api/datasources/{{ grafana_ds.json['id'] }}"
+      user: "{{ grafana_sa_token.stdout }}"
+      validate_certs: false
+      method: PUT
+      body: '{{ payload_data }}'
+      body_format: json
+      headers:
+        Content-Type: "Content-Type: application/json"
+      status_code:
+      - 200
+    register: update_ds
+  when: add_ds.status == 409
+
+- name: Regex set data source name for openshift dashboard
   replace:
     path: "{{ mktemp.stdout }}/openshift-cluster-monitoring.json"
     regexp: '{{ item.regexp }}'
@@ -189,7 +218,7 @@
   - regexp: 'Xs'
     replace: '{{ grafana_graph_granularity }}'
 
-- name: Regex set data soure name for node exporter
+- name: Regex set data source name for node exporter
   replace:
     path: "{{ mktemp.stdout }}/node-exporter-full-dashboard.json"
     regexp: '{{ item.regexp }}'
@@ -211,14 +240,20 @@
     src: "{{ cluster_monitoring_dashboard }}"
   register: slurpfile
 
+- set_fact:
+    dashboard_data: '{{ slurpfile["content"] | b64decode | from_json | combine({ "dashboard": { "overwrite": true } }, recursive=True) | to_json }}'
+
 - name: Add openshift dashboard
   uri:
     url: "{{ grafana_route }}/api/dashboards/db"
     user: "{{ grafana_sa_token.stdout }}"
     force_basic_auth: true
     method: POST
-    body: '{{ slurpfile["content"] | b64decode }}'
+    body: '{{ dashboard_data }}'
     body_format: json
+    status_code:
+    - 200
+    - 412
     headers:
       Content-Type: "Content-Type: application/json"
   register: add_ds
@@ -228,14 +263,20 @@
     src: "{{ node_exporter_dashboard }}"
   register: slurpfile
 
+- set_fact:
+    dashboard_data: '{{ slurpfile["content"] | b64decode | from_json | combine({ "dashboard": { "overwrite": true } }, recursive=True) | to_json }}'
+
 - name: Add node exporter dashboard
   uri:
     url: "{{ grafana_route }}/api/dashboards/db"
     user: "{{ grafana_sa_token.stdout }}"
     force_basic_auth: true
     method: POST
-    body: '{{ slurpfile["content"] | b64decode }}'
+    body: '{{ dashboard_data }}'
     body_format: json
+    status_code:
+    - 200
+    - 412
     headers:
       Content-Type: "Content-Type: application/json"
   register: add_ds
