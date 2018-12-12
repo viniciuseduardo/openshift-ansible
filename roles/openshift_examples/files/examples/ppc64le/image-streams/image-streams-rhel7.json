@@ -385,7 +385,7 @@
             },
             "from": {
               "kind": "DockerImage",
-              "name": "registry.redhat.io/rhoar-nodejs/nodejs-8"
+              "name": "registry.access.redhat.com/rhoar-nodejs/nodejs-8"
             },
             "name": "8-RHOAR",
             "referencePolicy": {
@@ -404,7 +404,7 @@
             },
             "from": {
               "kind": "DockerImage",
-              "name": "registry.redhat.io/rhoar-nodejs/nodejs-10"
+              "name": "registry.access.redhat.com/rhoar-nodejs/nodejs-10"
             },
             "name": "10",
             "referencePolicy": {

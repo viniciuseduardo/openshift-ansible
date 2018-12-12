@@ -24,7 +24,7 @@ items:
         version: '1.0'
       from:
         kind: DockerImage
-        name: registry.redhat.io/rhdm-7/rhdm70-decisioncentral-openshift:1.0
+        name: registry.access.redhat.com/rhdm-7/rhdm70-decisioncentral-openshift:1.0
       referencePolicy:
         type: Local
     - name: '1.1'
@@ -36,7 +36,7 @@ items:
         version: '1.1'
       from:
         kind: DockerImage
-        name: registry.redhat.io/rhdm-7/rhdm70-decisioncentral-openshift:1.1
+        name: registry.access.redhat.com/rhdm-7/rhdm70-decisioncentral-openshift:1.1
       referencePolicy:
         type: Local
 - kind: ImageStream
@@ -57,7 +57,7 @@ items:
         version: '1.0'
       from:
         kind: DockerImage
-        name: registry.redhat.io/rhdm-7/rhdm70-kieserver-openshift:1.0
+        name: registry.access.redhat.com/rhdm-7/rhdm70-kieserver-openshift:1.0
       referencePolicy:
         type: Local
     - name: '1.1'
@@ -69,6 +69,6 @@ items:
         version: '1.1'
       from:
         kind: DockerImage
-        name: registry.redhat.io/rhdm-7/rhdm70-kieserver-openshift:1.1
+        name: registry.access.redhat.com/rhdm-7/rhdm70-kieserver-openshift:1.1
       referencePolicy:
         type: Local
