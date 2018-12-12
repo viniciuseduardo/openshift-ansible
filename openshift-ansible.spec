@@ -9,7 +9,7 @@
 %global __requires_exclude ^/usr/bin/ansible-playbook$
 
 Name:           openshift-ansible
-Version:        3.11.46
+Version:        3.11.55
 Release:        1%{?dist}
 Summary:        Openshift and Atomic Enterprise Ansible
 License:        ASL 2.0
@@ -189,6 +189,54 @@ BuildArch:     noarch
 %{_datadir}/ansible/%{name}/test
 
 %changelog
+* Tue Dec 11 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.55-1
+- Handle audit log path in /var/log/origin (rsevilla@redhat.com)
+- Remove duplicated parameter CLUSTER_NAME on template gluster-s3-template.yml
+  (marcosmamorim@gmail.com)
+- Cleanup kuryr role (mdulko@redhat.com)
+- Install cifs-utils and samba required by Azure (jchaloup@redhat.com)
+- retries count increased on task (bilalccaliskan@gmail.com)
+- Use ansible 2.7.4 (roignac@gmail.com)
+- Update RBAC for Calico (mleung975@gmail.com)
+- Ensure OSE vars are not overwritten at the dynamic inventory
+  (ltomasbo@redhat.com)
+- add openshift_version dependency to openshift_repos role
+  (tzumainn@redhat.com)
+- openshift_ovirt: add vms into inventory groups (rgolan@redhat.com)
+- add nodejs rhoar and openjdk imagestreams for ppc64le (jeyoung@redhat.com)
+- Ensure openshift_upgrade_nodes_label works (mgugino@redhat.com)
+- Extend Openstack cloud provider LB parameters (yossi.boaron.1234@gmail.com)
+
+* Sun Dec 09 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.54-1
+- 
+
+* Thu Dec 06 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.53-1
+- 
+
+* Tue Dec 04 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.52-1
+- Install python-docker-py instead of python-docker (sgaikwad@redhat.com)
+- Install boto3 from pip (roignac@gmail.com)
+- glusterfs: bind-mount /dev/mapper into the glusterfs-server container
+  (ndevos@redhat.com)
+- Also set etcd_cert_config_dir for calico (sdodson@redhat.com)
+
+* Mon Dec 03 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.51-1
+- Added ovirt_admin variable to avoid use admin rights on RHV platform
+  (jparrill@redhat.com)
+
+* Fri Nov 30 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.50-1
+- 
+
+* Fri Nov 30 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.49-1
+- Remove 80-openshift-network.conf during uninstallation
+  (nakayamakenjiro@gmail.com)
+- [KIECLOUD-56] - Update PAM DM templates on OpenShift for 7.1.1
+  (fspolti@redhat.com)
+
+* Thu Nov 29 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.47-1
+- glusterfs: bind-mount /dev/disk into the glusterfs-server container
+  (ndevos@redhat.com)
+
 * Wed Nov 28 2018 AOS Automation Release Team <aos-team-art@redhat.com> 3.11.46-1
 - Add openssh-clients dependency (sdodson@redhat.com)
 - update references to outdated variable openshift_monitoring_deploy

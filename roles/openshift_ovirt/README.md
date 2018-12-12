@@ -19,6 +19,7 @@ The generated inventory can be merged into and openshift inventory(see examples 
 - `build_vm_list.yml`: Creates a list of virtual machine definitions and
   affinity groups based on a simple manifest (below)
 - `create_vms.yaml`: consumes the output of the former task and create vms for the nodes of the cluster. It generates an inventory of nodes.
+- `inventory tasks` : tasks that will insert the oVirt VMs from former tasks into the inventory, so you don't need to specify it manually in the inventory.
 
 ## Role Variables
 
@@ -26,6 +27,7 @@ For documentation on virtual machine profile options, see the [oVirt Ansible VM-
 
 | Name                      | Default value |                                                                                         |
 |---------------------------|---------------|-----------------------------------------------------------------------------------------|
+| openshift_ovirt_all_in_one  | false    | When true, creates an all in one inventory entries from the first master vm |
 | openshift_ovirt_vm_profile  | See below.    | Dictionary of dictionaries providing common VM parameters for virtual machine creation. |
 | openshift_ovirt_vm_manifest | See below.    | List of dictionaries specifying node base name, count, and which of the above profiles to apply. The default creates three master nodes, three infrastructure nodes, one application node, and a load balancer. |
 
@@ -35,6 +37,7 @@ The `openshift_ovirt_vm_manifest` variable can contain following attributes
 |-----------|------|---------------|-----------------------------------------------------------------------------------------------------------------|
 | nic_mode  | Dict | UNDEF         | If you define this variable means that the interface on the VM will have static address instead of dynamic one. |
 | empty_hostname  | Bool | True   | If True, the VM's Hostname will remain empty in cloud-init, and will relays the VM's hostname on DHCP name. |
+| ovirt_admin  | Bool | True   | If False, the role will not try to add tags to the created vms and also avoid to get into affinity groups. This way the role could be executed without admin rights |
 
 Below `nic_mode` we can find this other parameters
 
@@ -93,8 +96,20 @@ openshift_ovirt_vm_profile:
     state: running
 ```
 
-
 - **openshift_ovirt_vm_manifest**
+```
+openshift_ovirt_vm_manifest:
+- name: 'master'
+  count: 3
+- name: 'infra'
+  count: 2
+  profile: 'node'
+- name: 'compute'
+  count: 9
+  profile: 'node'
+
+
+- **openshift_ovirt_vm_manifest with static IPs**
 ```
 openshift_ovirt_vm_manifest:
 #######################################
@@ -168,7 +183,7 @@ openshift_ovirt_vm_manifest:
 
 ```
 ---
-- name: Deploy oVirt template and virtual machines
+- name: Deploy OKD on oVirt from zero to working state
   hosts: localhost
   connection: local
   gather_facts: false
@@ -184,8 +199,13 @@ openshift_ovirt_vm_manifest:
       tags:
         - always
 
-  roles:
-    - openshift_ovirt
+  tasks:
+    - import_role:
+        name: openshift_ovirt
+
+- import_playbook: /home/rgolan/src/openshift-ansible/playbooks/prerequisites.yml
+- import_playbook: /home/rgolan/src/openshift-ansible/playbooks/openshift-node/network_manager.yml
+- import_playbook: /home/rgolan/src/openshift-ansible/playbooks/deploy_cluster.yml
 
   post_tasks:
     - name: Logout from oVirt
@@ -195,8 +215,6 @@ openshift_ovirt_vm_manifest:
       tags:
         - always
 ```
-
-**Side Note:** Regarding the behaviour, of the iterations, If we have a `count: 1` in our vm definition, the name that you put in the proper field will be preserved, but if we have more than 1 a counter will be raised and the vm name will be `name + iteration` (EG) _node0_, _node1_, _node2_ in case of `count: 3`
 
 License
 -------
