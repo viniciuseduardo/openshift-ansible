@@ -1,6 +1,6 @@
 ---
 - name: Ensure that Logging Curator has nodes to run on
-  import_role:
+  include_role:
     name: openshift_control_plane
     tasks_from: ensure_nodes_matching_selector.yml
   vars:
@@ -33,6 +33,8 @@
     name: "aggregated-logging-curator"
     namespace: "{{ openshift_logging_namespace }}"
     image_pull_secrets: "{{ openshift_logging_curator_image_pull_secret }}"
+    secrets:
+      - logging-curator
   when: openshift_logging_curator_image_pull_secret != ''
 
 - name: Create Curator service account
@@ -40,6 +42,8 @@
     state: present
     name: "aggregated-logging-curator"
     namespace: "{{ openshift_logging_namespace }}"
+    secrets:
+      - logging-curator
   when:
     - openshift_logging_curator_image_pull_secret == ''
 
@@ -103,7 +107,7 @@
     - "curator.yml"
 
 # Patch existing configuration, if present
-- import_role:
+- include_role:
     name: openshift_logging
     tasks_from: patch_configmap_files.yaml
   vars:

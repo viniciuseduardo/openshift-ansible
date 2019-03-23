@@ -326,7 +326,7 @@ def lib_utils_oo_parse_named_certificates(certificates, named_certs_dir, interna
             cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, st_cert)
             certificate['names'].append(str(cert.get_subject().commonName.decode()))
             for i in range(cert.get_extension_count()):
-                if cert.get_extension(i).get_short_name() == 'subjectAltName':
+                if cert.get_extension(i).get_short_name() == b'subjectAltName':
                     for name in str(cert.get_extension(i)).split(', '):
                         if 'DNS:' in name:
                             certificate['names'].append(name.replace('DNS:', ''))
@@ -392,7 +392,7 @@ def lib_utils_oo_parse_certificate_san(certificate):
     try:
         lcert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, certificate)
         for i in range(lcert.get_extension_count()):
-            if lcert.get_extension(i).get_short_name() == 'subjectAltName':
+            if lcert.get_extension(i).get_short_name() == b'subjectAltName':
                 sanstr = str(lcert.get_extension(i))
                 sanstr = sanstr.replace('DNS:', '')
                 sanstr = sanstr.replace('IP Address:', '')
@@ -658,7 +658,7 @@ def lib_utils_oo_oreg_image(image_default, oreg_url):
     oreg_parts = oreg_url.rsplit('/', 2)
     if len(oreg_parts) < 2:
         raise errors.AnsibleFilterError("oreg_url malformed: {}".format(oreg_url))
-    if not (len(oreg_parts) >= 3 and '.' in oreg_parts[0]):
+    if not (len(oreg_parts) >= 2 and '.' in oreg_parts[0]):
         # oreg_url does not include host information; we'll just return etcd default
         return image_default
 

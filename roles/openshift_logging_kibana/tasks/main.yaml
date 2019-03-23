@@ -11,7 +11,7 @@
     msg: "Provided value for 'openshift_logging_kibana_session_timeout_seconds' is invalid. Only positive integers are allowed."
 
 - name: Ensure that Kibana has nodes to run on
-  import_role:
+  include_role:
     name: openshift_control_plane
     tasks_from: ensure_nodes_matching_selector.yml
   vars:
@@ -44,6 +44,8 @@
     name: "aggregated-logging-kibana"
     namespace: "{{ openshift_logging_namespace }}"
     image_pull_secrets: "{{ openshift_logging_kibana_image_pull_secret }}"
+    secrets:
+      - logging-kibana
   when: openshift_logging_kibana_image_pull_secret != ''
 
 - name: Create Kibana service account
@@ -51,8 +53,18 @@
     state: present
     name: "aggregated-logging-kibana"
     namespace: "{{ openshift_logging_namespace }}"
+    secrets:
+      - logging-kibana
   when:
     - openshift_logging_kibana_image_pull_secret == ''
+
+- name: Create Kibana service account auth delegator clusterrolebinding
+  oc_adm_policy_user:
+    state: present
+    namespace: "{{ openshift_logging_namespace }}"
+    resource_kind: cluster-role
+    resource_name: system:auth-delegator
+    user: "system:serviceaccount:{{ openshift_logging_namespace}}:aggregated-logging-kibana"
 
 - set_fact:
     kibana_name: "{{ 'logging-kibana' ~ ( (openshift_logging_kibana_ops_deployment | default(false) | bool) | ternary('-ops', '')) }}"
